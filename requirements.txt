@@ -2,11 +2,7 @@ pandas
 numpy
 scikit-learn
 xgboost
-shap
 fastapi
 uvicorn
-matplotlib
-seaborn
-requests
 joblib
-jinja2
+requests

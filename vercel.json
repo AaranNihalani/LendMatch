@@ -4,5 +4,10 @@
       "source": "/(.*)",
       "destination": "/src/index.py"
     }
-  ]
+  ],
+  "functions": {
+    "src/index.py": {
+      "excludeFiles": "data/**"
+    }
+  }
 }
