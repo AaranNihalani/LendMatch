@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/src/index.py"
+      "destination": "/api/index.py"
     }
   ],
   "functions": {
-    "src/index.py": {
+    "api/index.py": {
       "excludeFiles": "data/**"
     }
   }

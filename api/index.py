@@ -1,9 +1,14 @@
+import sys
+import os
+
+# Add the project root directory to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from src.prediction_service import PredictionService
-import os
 
 app = FastAPI(title="Loan Matching Platform API")
 
