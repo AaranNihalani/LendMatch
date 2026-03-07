@@ -1,12 +1,8 @@
 import pandas as pd
 import numpy as np
-try:
-    import xgboost as xgb
-except ImportError:
-    xgb = None
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor, GradientBoostingClassifier
 from sklearn.metrics import roc_auc_score, mean_squared_error, mean_absolute_error, r2_score, classification_report, roc_curve, accuracy_score
 import joblib
 import os
@@ -78,14 +74,11 @@ class ModelTrainer:
         
         print(f"Class Balance - Accepted: {num_pos}, Rejected: {num_neg}, Scale Weight: {scale_pos_weight:.2f}")
 
-        # Use XGBoost for better performance
-        model = xgb.XGBClassifier(
+        # Use GradientBoostingClassifier from sklearn (lighter than xgboost)
+        model = GradientBoostingClassifier(
             n_estimators=100,
             learning_rate=0.1,
             max_depth=5,
-            eval_metric='logloss',
-            use_label_encoder=False,
-            scale_pos_weight=scale_pos_weight,
             random_state=42
         )
         
@@ -104,12 +97,18 @@ class ModelTrainer:
         joblib.dump(model, os.path.join(self.models_dir, 'approval_model.pkl'))
         
         # Feature Importance
-        plt.figure(figsize=(10, 6))
-        xgb.plot_importance(model, max_num_features=10)
-        plt.title("Approval Model Feature Importance")
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.reports_dir, 'approval_importance.png'))
-        plt.close()
+        if hasattr(model, 'feature_importances_'):
+            feature_importance = model.feature_importances_
+            sorted_idx = np.argsort(feature_importance)
+            pos = np.arange(sorted_idx.shape[0]) + .5
+            fig = plt.figure(figsize=(12, 6))
+            plt.subplot(1, 1, 1)
+            plt.barh(pos, feature_importance[sorted_idx], align='center')
+            plt.yticks(pos, np.array(X.columns)[sorted_idx])
+            plt.title('Feature Importance (MDI)')
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.reports_dir, 'approval_importance.png'))
+            plt.close()
 
     def train_risk_pricing_workflow(self):
         print("\n=== Risk & Pricing Models Workflow ===")
@@ -146,14 +145,11 @@ class ModelTrainer:
             print(f"\nTraining Default Model on {len(X_def)} samples...")
             X_train, X_test, y_train, y_test = train_test_split(X_def, y_def, test_size=0.2, random_state=42)
             
-            # Use XGBoost
-            model_def = xgb.XGBClassifier(
+            # Use GradientBoostingClassifier
+            model_def = GradientBoostingClassifier(
                 n_estimators=200,
                 learning_rate=0.05,
                 max_depth=6,
-                eval_metric='logloss',
-                use_label_encoder=False,
-                scale_pos_weight=(len(y_train) - sum(y_train)) / sum(y_train), # Handle imbalance
                 random_state=42
             )
             
@@ -187,9 +183,8 @@ class ModelTrainer:
             print(f"\nTraining Interest Rate Model on {len(X_int)} samples...")
             X_train, X_test, y_train, y_test = train_test_split(X_int, y_int, test_size=0.2, random_state=42)
             
-            # XGBRegressor
-            model_int = xgb.XGBRegressor(
-                objective='reg:squarederror',
+            # GradientBoostingRegressor
+            model_int = GradientBoostingRegressor(
                 n_estimators=200,
                 learning_rate=0.05,
                 max_depth=6,
