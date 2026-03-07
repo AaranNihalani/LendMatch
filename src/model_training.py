@@ -1,15 +1,23 @@
 import pandas as pd
 import numpy as np
-import xgboost as xgb
+try:
+    import xgboost as xgb
+except ImportError:
+    xgb = None
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
 from sklearn.metrics import roc_auc_score, mean_squared_error, mean_absolute_error, r2_score, classification_report, roc_curve, accuracy_score
-import shap
-import matplotlib.pyplot as plt
 import joblib
 import os
 import re
+
+try:
+    import shap
+    import matplotlib.pyplot as plt
+except ImportError:
+    shap = None
+    plt = None
 
 class ModelTrainer:
     def __init__(self, processed_dir="data/processed", models_dir="models", reports_dir="reports/figures"):
