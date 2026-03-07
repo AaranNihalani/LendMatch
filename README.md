@@ -23,9 +23,10 @@ loan-matching-platform/
 ├── data/
 │   ├── raw/                   # Raw data (synthetic or real)
 │   └── processed/             # Cleaned and engineered data
-├── frontend/
-│   ├── templates/             # HTML templates
-│   └── static/                # CSS/JS assets
+├── docs/                  # Frontend assets (served by GitHub Pages)
+│   ├── index.html         # Main entry point
+│   ├── styles.css         # Styles
+│   └── main.js            # Frontend logic
 ├── models/
 │   ├── artifacts/             # Scalers and encoders
 │   └── ...                    # Trained models (pkl)

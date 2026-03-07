@@ -54,7 +54,7 @@ def predict(application: LoanApplication):
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 # Serve Static Files (Frontend)
-if not os.path.exists("static"):
-    os.makedirs("static")
+if not os.path.exists("docs"):
+    os.makedirs("docs")
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory="docs", html=True), name="static")
