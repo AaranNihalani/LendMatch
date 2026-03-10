@@ -45,7 +45,7 @@ class PredictionService:
         Prepare features for the Approval Model.
         Expected input keys: amount, risk_score, dti, emp_length, state
         """
-        df = pd.DataFrame([input_data])
+        df = pd.DataFrame([{}])
         
         # Mapping input keys to model feature names
         # Model expects: amount, risk_score, dti, emp_length_num, state
@@ -77,7 +77,12 @@ class PredictionService:
             # or rely on ColumnTransformer ignoring others if configured so.
             # But typically ColumnTransformer needs the columns specified in its transformers to be present.
             try:
-                X_processed = self.approval_preprocessor.transform(df)
+                if hasattr(self.approval_preprocessor, "feature_names_in_"):
+                    required = list(self.approval_preprocessor.feature_names_in_)
+                    df_in = df.reindex(columns=required)
+                else:
+                    df_in = df
+                X_processed = self.approval_preprocessor.transform(df_in)
                 return X_processed
             except Exception as e:
                 print(f"Approval preprocessing error: {e}")
@@ -90,7 +95,7 @@ class PredictionService:
         Prepare features for Default and Interest Rate Models.
         Replicates logic from FeatureEngineering.process_accepted_features
         """
-        df = pd.DataFrame([input_data])
+        df = pd.DataFrame([{}])
         
         # 1. Map basic inputs to dataframe columns expected by logic
         df['loan_amnt'] = float(input_data.get('loan_amount', 0))
@@ -170,7 +175,12 @@ class PredictionService:
             try:
                 # ColumnTransformer with set_output="pandas" returns a DataFrame with feature names
                 # We need to make sure we catch errors if columns are missing
-                X_processed = self.full_preprocessor.transform(df)
+                if hasattr(self.full_preprocessor, "feature_names_in_"):
+                    required = list(self.full_preprocessor.feature_names_in_)
+                    df_in = df.reindex(columns=required)
+                else:
+                    df_in = df
+                X_processed = self.full_preprocessor.transform(df_in)
                 
                 # If the training used engineered features (num__ prefix), the preprocessor output 
                 # (if it was the one used in FeatureEngineering) should align.
