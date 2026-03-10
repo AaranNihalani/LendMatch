@@ -24,7 +24,11 @@ app.add_middleware(
 # Initialize Service
 # Check if models exist
 if os.path.exists("models/approval_model.pkl"):
-    service = PredictionService()
+    try:
+        service = PredictionService()
+    except Exception as e:
+        print(f"WARNING: Failed to initialize PredictionService: {e}")
+        service = None
 else:
     print("WARNING: Models not found. API running in limited mode.")
     service = None

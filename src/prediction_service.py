@@ -8,19 +8,20 @@ except ModuleNotFoundError:
     from lender_matching import LenderMatcher
 
 class PredictionService:
-    def __init__(self, models_dir="models", auto_retrain_on_incompat=True):
+    def __init__(self, models_dir="models", auto_retrain_on_incompat=False):
         self.models_dir = models_dir
         self.artifacts_dir = os.path.join(models_dir, "artifacts")
         self.lender_matcher = LenderMatcher()
         self._last_approval_prep_error = None
         self._last_risk_prep_error = None
-        self._auto_retrain_on_incompat = bool(auto_retrain_on_incompat)
+        env_flag = os.environ.get("LENDMATCH_AUTO_RETRAIN_ON_INCOMPAT", "").strip().lower() in {"1", "true", "yes"}
+        self._auto_retrain_on_incompat = bool(auto_retrain_on_incompat) or env_flag
+        self.load_error = None
         
         # Load Models and Artifacts
         print("Loading models and artifacts...")
         self._load_artifacts()
-        if self._auto_retrain_on_incompat:
-            self._ensure_compatible_or_retrain()
+        self._ensure_compatible_or_retrain()
 
     def _load_artifacts(self):
         try:
@@ -43,6 +44,7 @@ class PredictionService:
             print("Models loaded successfully.")
         except Exception as e:
             print(f"Error loading models: {e}")
+            self.load_error = str(e)
             self.approval_model = None
             self.default_model = None
             self.interest_model = None
@@ -60,6 +62,8 @@ class PredictionService:
         return any(n.lower() in msg.lower() for n in needles)
 
     def _ensure_compatible_or_retrain(self):
+        if self.approval_model is None and self.default_model is None and self.interest_model is None:
+            return
         try:
             if self.approval_preprocessor is not None:
                 df = pd.DataFrame([{"amount": 0.0, "risk_score": 0.0, "dti": 0.0, "emp_length_num": 0.0, "state": "CA"}])
@@ -75,10 +79,28 @@ class PredictionService:
                 self.full_preprocessor.transform(df.reindex(columns=required))
         except Exception as e:
             if not self._artifact_compat_error(e):
+                self.load_error = str(e)
                 return
             print(f"Detected incompatible model artifacts: {e}")
-            self._retrain_models_and_artifacts()
-            self._load_artifacts()
+            self.load_error = str(e)
+            if not self._auto_retrain_on_incompat:
+                self.approval_model = None
+                self.default_model = None
+                self.interest_model = None
+                self.approval_preprocessor = None
+                self.full_preprocessor = None
+                return
+            try:
+                self._retrain_models_and_artifacts()
+                self.load_error = None
+                self._load_artifacts()
+            except Exception as retrain_error:
+                self.load_error = str(retrain_error)
+                self.approval_model = None
+                self.default_model = None
+                self.interest_model = None
+                self.approval_preprocessor = None
+                self.full_preprocessor = None
 
     def _retrain_models_and_artifacts(self):
         try:
