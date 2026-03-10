@@ -44,7 +44,20 @@ class LoanApplication(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "models_loaded": service is not None}
+    payload = {"status": "ok", "models_loaded": service is not None}
+    if service is not None:
+        payload.update(
+            {
+                "has_approval_model": getattr(service, "approval_model", None) is not None,
+                "has_default_model": getattr(service, "default_model", None) is not None,
+                "has_interest_model": getattr(service, "interest_model", None) is not None,
+                "has_approval_preprocessor": getattr(service, "approval_preprocessor", None) is not None,
+                "has_full_preprocessor": getattr(service, "full_preprocessor", None) is not None,
+                "approval_preprocessor_type": type(getattr(service, "approval_preprocessor", None)).__name__,
+                "full_preprocessor_type": type(getattr(service, "full_preprocessor", None)).__name__,
+            }
+        )
+    return payload
 
 @app.post("/predict")
 def predict(application: LoanApplication):

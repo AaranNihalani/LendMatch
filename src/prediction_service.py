@@ -85,10 +85,7 @@ class PredictionService:
                 else:
                     df_in = df
                 self._last_approval_prep_error = None
-                try:
-                    return self.approval_preprocessor.transform(df_in)
-                except Exception:
-                    return self.approval_preprocessor.transform(df_in.to_numpy())
+                return self.approval_preprocessor.transform(df_in)
             except Exception as e:
                 print(f"Approval preprocessing error: {e}")
                 self._last_approval_prep_error = str(e)
@@ -186,10 +183,7 @@ class PredictionService:
                 else:
                     df_in = df
                 self._last_risk_prep_error = None
-                try:
-                    X_processed = self.full_preprocessor.transform(df_in)
-                except Exception:
-                    X_processed = self.full_preprocessor.transform(df_in.to_numpy())
+                X_processed = self.full_preprocessor.transform(df_in)
                 
                 feature_names = None
                 if hasattr(self.full_preprocessor, "get_feature_names_out"):
