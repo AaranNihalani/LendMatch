@@ -209,6 +209,7 @@ class PredictionService:
             dict: Prediction results (Approval, Default Prob, Interest Rate, Offers).
         """
         results = {}
+        warnings = []
         
         # 1. Approval Prediction
         X_app = self._prepare_approval_features(input_data)
@@ -221,9 +222,14 @@ class PredictionService:
                 results['is_approved'] = bool(prob_approval > 0.5)
             except Exception as e:
                 print(f"Approval prediction failed: {e}")
+                warnings.append(f"approval_prediction_failed: {e}")
                 results['approval_probability'] = 0.0
                 results['is_approved'] = False
         else:
+            if not self.approval_model:
+                warnings.append("approval_model_missing")
+            if X_app is None:
+                warnings.append("approval_features_missing")
             results['approval_probability'] = 0.0
             results['is_approved'] = False
             
@@ -244,9 +250,16 @@ class PredictionService:
                 # But X_risk_rate might be None if transform failed
                 X_for_rate_pred = X_risk_rate.drop(columns=['num__int_rate'], errors='ignore')
                 interest_rate = self.interest_model.predict(X_for_rate_pred)[0]
-                results['predicted_interest_rate'] = float(interest_rate)
             except Exception as e:
                 print(f"Interest prediction failed: {e}")
+                warnings.append(f"interest_prediction_failed: {e}")
+        else:
+            if not self.interest_model:
+                warnings.append("interest_model_missing")
+            if X_risk_rate is None:
+                warnings.append("risk_features_missing_for_interest")
+
+        results['predicted_interest_rate'] = float(interest_rate)
                 
         # Step B: Predict Default Risk using the predicted interest rate
         input_for_default = input_data.copy()
@@ -256,9 +269,16 @@ class PredictionService:
         if self.default_model and X_risk_default is not None:
             try:
                 default_prob = self.default_model.predict_proba(X_risk_default)[:, 1][0]
-                results['default_probability'] = float(default_prob)
             except Exception as e:
                 print(f"Default prediction failed: {e}")
+                warnings.append(f"default_prediction_failed: {e}")
+        else:
+            if not self.default_model:
+                warnings.append("default_model_missing")
+            if X_risk_default is None:
+                warnings.append("risk_features_missing_for_default")
+
+        results['default_probability'] = float(default_prob)
 
         # 3. Lender Matching
         # Only meaningful if approval probability is decent
@@ -271,5 +291,8 @@ class PredictionService:
             results['offers'] = offers
         else:
             results['offers'] = []
-            
+
+        if warnings:
+            results["warnings"] = warnings
+
         return results

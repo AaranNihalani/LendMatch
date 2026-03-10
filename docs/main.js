@@ -71,7 +71,10 @@ function displayResults(result) {
     const offersContainer = document.getElementById('lenderOffers');
     
     // Approval Logic
-    const probPercent = (result.approval_probability * 100).toFixed(1);
+    const approvalProbValue = (result.approval_probability === undefined || result.approval_probability === null)
+        ? 0
+        : Number(result.approval_probability);
+    const probPercent = (approvalProbValue * 100).toFixed(1);
     
     if (result.is_approved) {
         approvalElem.textContent = "Approved";
@@ -88,15 +91,15 @@ function displayResults(result) {
     }
     
     // Interest Rate
-    if (result.predicted_interest_rate) {
-        rateElem.textContent = `${result.predicted_interest_rate.toFixed(2)}%`;
+    if (result.predicted_interest_rate !== undefined && result.predicted_interest_rate !== null && !Number.isNaN(Number(result.predicted_interest_rate))) {
+        rateElem.textContent = `${Number(result.predicted_interest_rate).toFixed(2)}%`;
     } else {
         rateElem.textContent = "N/A";
     }
     
     // Default Risk
-    if (result.default_probability) {
-        riskElem.textContent = `${(result.default_probability * 100).toFixed(1)}%`;
+    if (result.default_probability !== undefined && result.default_probability !== null && !Number.isNaN(Number(result.default_probability))) {
+        riskElem.textContent = `${(Number(result.default_probability) * 100).toFixed(1)}%`;
     } else {
         riskElem.textContent = "N/A";
     }
