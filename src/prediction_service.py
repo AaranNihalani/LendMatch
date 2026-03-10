@@ -2,7 +2,10 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
-from src.lender_matching import LenderMatcher
+try:
+    from src.lender_matching import LenderMatcher
+except ModuleNotFoundError:
+    from lender_matching import LenderMatcher
 
 class PredictionService:
     def __init__(self, models_dir="models"):

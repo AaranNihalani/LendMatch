@@ -20,37 +20,117 @@ class FeatureEngineering:
             print(f"Directories checked/created: {self.models_dir}, {self.artifacts_dir}")
         except Exception as e:
             print(f"Error creating directories: {e}")
+
+    def _is_stale(self, output_path, input_paths):
+        if not os.path.exists(output_path):
+            return True
+        try:
+            output_mtime = os.path.getmtime(output_path)
+        except OSError:
+            return True
+        for p in input_paths:
+            if not os.path.exists(p):
+                continue
+            try:
+                if os.path.getmtime(p) > output_mtime:
+                    return True
+            except OSError:
+                return True
+        return False
+
+    def _load_sampled_csv(self, input_path, max_rows=200000, chunksize=200000, seed=42):
+        df_parts = []
+        remaining = int(max_rows)
+        for chunk in pd.read_csv(input_path, low_memory=False, chunksize=chunksize):
+            if remaining <= 0:
+                break
+            take = min(len(chunk), remaining)
+            df_parts.append(chunk.sample(n=take, random_state=seed))
+            remaining -= take
+        if not df_parts:
+            return pd.DataFrame()
+        return pd.concat(df_parts, axis=0, ignore_index=True)
+
+    def _load_stratified_binary_sample_csv(
+        self,
+        input_path,
+        label_col,
+        n_per_class=100000,
+        positive_value=1,
+        negative_value=0,
+        chunksize=200000,
+        seed=42,
+    ):
+        rng = np.random.default_rng(seed)
+        pos_parts = []
+        neg_parts = []
+        pos_needed = int(n_per_class)
+        neg_needed = int(n_per_class)
+
+        for chunk in pd.read_csv(input_path, low_memory=False, chunksize=chunksize):
+            if label_col not in chunk.columns:
+                continue
+
+            labels = pd.to_numeric(chunk[label_col], errors="coerce")
+            pos = chunk[labels == positive_value]
+            neg = chunk[labels == negative_value]
+
+            if pos_needed > 0 and len(pos) > 0:
+                take = min(pos_needed, len(pos))
+                pos_parts.append(pos.sample(n=take, random_state=int(rng.integers(0, 1_000_000_000))))
+                pos_needed -= take
+
+            if neg_needed > 0 and len(neg) > 0:
+                take = min(neg_needed, len(neg))
+                neg_parts.append(neg.sample(n=take, random_state=int(rng.integers(0, 1_000_000_000))))
+                neg_needed -= take
+
+            if pos_needed <= 0 and neg_needed <= 0:
+                break
+
+        df = pd.concat(pos_parts + neg_parts, axis=0, ignore_index=True) if (pos_parts or neg_parts) else pd.DataFrame()
+        if df.empty:
+            return df
+        return df.sample(frac=1.0, random_state=seed).reset_index(drop=True)
         
     def run(self):
         print("Starting Feature Engineering...")
+        code_path = os.path.abspath(__file__)
         
         # 1. Process Accepted Data (Rich Features for Default/Interest)
         accepted_path = os.path.join(self.processed_dir, "accepted_clean.csv")
         full_train_path = os.path.join(self.processed_dir, "train_data_full.csv")
+        full_preprocessor_path = os.path.join(self.artifacts_dir, "full_preprocessor.pkl")
         
-        if os.path.exists(full_train_path):
-             print(f"Skipping Accepted Data Processing: {full_train_path} already exists.")
-        elif os.path.exists(accepted_path):
+        if os.path.exists(accepted_path) and (
+            self._is_stale(full_train_path, [accepted_path, code_path])
+            or self._is_stale(full_preprocessor_path, [accepted_path, code_path])
+        ):
             self.process_accepted_features(accepted_path)
+        elif os.path.exists(full_train_path) and os.path.exists(full_preprocessor_path):
+            print(f"Skipping Accepted Data Processing: {full_train_path} is up-to-date.")
         else:
             print(f"Warning: {accepted_path} not found.")
             
         # 2. Process Approval Data (Combined)
         approval_path = os.path.join(self.processed_dir, "approval_data.csv")
         approval_train_path = os.path.join(self.processed_dir, "train_data_approval.csv")
+        approval_preprocessor_path = os.path.join(self.artifacts_dir, "approval_preprocessor.pkl")
         
-        if os.path.exists(approval_train_path):
-            print(f"Skipping Approval Data Processing: {approval_train_path} already exists.")
-        elif os.path.exists(approval_path):
+        if os.path.exists(approval_path) and (
+            self._is_stale(approval_train_path, [approval_path, code_path])
+            or self._is_stale(approval_preprocessor_path, [approval_path, code_path])
+        ):
             self.process_approval_features(approval_path)
+        elif os.path.exists(approval_train_path) and os.path.exists(approval_preprocessor_path):
+            print(f"Skipping Approval Data Processing: {approval_train_path} is up-to-date.")
         else:
             print(f"Warning: {approval_path} not found.")
             
     def process_accepted_features(self, path):
         print("\n--- Engineering Features for Default/Interest Models ---")
-        # Use a sample for development speed
         print("Loading Accepted Data (Sampling 200k rows)...")
-        df = pd.read_csv(path, low_memory=False, nrows=200000)
+        df = self._load_sampled_csv(path, max_rows=200000)
         
         # Preserve targets that might be transformed
         if 'int_rate' in df.columns:
@@ -162,16 +242,12 @@ class FeatureEngineering:
 
     def process_approval_features(self, path):
         print("\n--- Engineering Features for Approval Model ---")
-        # Load full data to shuffle and sample effectively
         print("Loading Approval Data...")
-        try:
-            # Read full file (it's relatively small in columns)
-            df = pd.read_csv(path)
-            print(f"Loaded {len(df)} rows. Shuffling and sampling 200k...")
-            df = df.sample(n=min(200000, len(df)), random_state=42)
-        except Exception as e:
-            print(f"Error reading approval data: {e}")
+        df = self._load_stratified_binary_sample_csv(path, label_col="accepted", n_per_class=100000)
+        if df.empty:
+            print("Approval data is empty after sampling.")
             return
+        print(f"Loaded {len(df)} sampled rows.")
         
         # Features: amount, risk_score, dti, emp_length_num, state, policy_code
         # Target: accepted

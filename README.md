@@ -1,32 +1,46 @@
 # Data-Driven Loan Matching and Credit Decision Platform
 
 ## Overview
-This project is a research-grade applied data science system that predicts loan outcomes (default risk, interest rate, approval probability) and recommends optimal lenders. It features a full ML pipeline, a FastAPI backend, and a Streamlit frontend.
+This project is a research-grade applied data science system that predicts loan outcomes (default risk, interest rate, approval probability) and recommends optimal lenders. It features a full ML pipeline, a FastAPI backend, and a lightweight static frontend.
 
 ## Data Source
-The project is configured to work with either **Synthetic Data** (default) or **Real LendingClub Data**.
+The project supports:
+- **Real LendingClub-style Accepted/Rejected CSVs** (preferred if available)
+- **Synthetic LendingClub-like data** (auto-generated if raw CSVs are missing)
+
+If both real and synthetic CSVs exist in `data/raw/`, the pipeline prefers the real LendingClub 2007–2018Q4 files.
 
 ### Using Real Data
-1.  Download the LendingClub dataset (e.g., `loan.csv`) from Kaggle or other sources.
-2.  Place the file at `data/raw/loan.csv`.
-3.  Run the pipeline: `python src/data_pipeline.py`.
-    - The system will automatically detect the real data file and use it instead of generating synthetic data.
+Place both files in `data/raw/`:
+- `accepted_*.csv` (accepted / funded loans)
+- `rejected_*.csv` (rejected applications)
+
+Then run:
+```bash
+python src/data_pipeline.py
+```
 
 ### Using Synthetic Data
-If no `loan.csv` is found, the system generates 10,000 synthetic records mimicking the LendingClub schema to ensure reproducibility and immediate usability.
+If `data/raw/` does not contain accepted/rejected CSVs, running:
+```bash
+python src/data_pipeline.py
+```
+will generate:
+- `data/raw/accepted_synthetic.csv`
+- `data/raw/rejected_synthetic.csv`
 
 ## Project Structure
 ```
 loan-matching-platform/
-├── backend/
-│   └── api.py                 # FastAPI service
+├── api/
+│   └── index.py               # FastAPI service (also serves docs/)
 ├── data/
 │   ├── raw/                   # Raw data (synthetic or real)
 │   └── processed/             # Cleaned and engineered data
-├── docs/                  # Frontend assets (served by GitHub Pages)
-│   ├── index.html         # Main entry point
-│   ├── styles.css         # Styles
-│   └── main.js            # Frontend logic
+├── docs/                      # Static frontend assets
+│   ├── index.html             # Main entry point
+│   ├── styles.css             # Styles
+│   └── main.js                # Frontend logic
 ├── models/
 │   ├── artifacts/             # Scalers and encoders
 │   └── ...                    # Trained models (pkl)
@@ -51,7 +65,7 @@ loan-matching-platform/
 
 1. **Create Virtual Environment**
    ```bash
-   python3 -m venv venv
+   python -m venv venv
    source venv/bin/activate
    ```
 
@@ -82,7 +96,7 @@ loan-matching-platform/
    The backend now serves the frontend directly.
    Open a terminal and run:
    ```bash
-   uvicorn backend.api:app --reload --port 8000
+   uvicorn api.index:app --reload --port 8000
    ```
    
 2. **Access the Platform**
