@@ -8,21 +8,26 @@ except ModuleNotFoundError:
     from lender_matching import LenderMatcher
 
 class PredictionService:
-    def __init__(self, models_dir="models"):
+    def __init__(self, models_dir="models", auto_retrain_on_incompat=True):
         self.models_dir = models_dir
         self.artifacts_dir = os.path.join(models_dir, "artifacts")
         self.lender_matcher = LenderMatcher()
         self._last_approval_prep_error = None
         self._last_risk_prep_error = None
+        self._auto_retrain_on_incompat = bool(auto_retrain_on_incompat)
         
         # Load Models and Artifacts
         print("Loading models and artifacts...")
+        self._load_artifacts()
+        if self._auto_retrain_on_incompat:
+            self._ensure_compatible_or_retrain()
+
+    def _load_artifacts(self):
         try:
-            self.approval_model = joblib.load(os.path.join(models_dir, "approval_model.pkl"))
-            self.default_model = joblib.load(os.path.join(models_dir, "default_model.pkl"))
-            self.interest_model = joblib.load(os.path.join(models_dir, "interest_model.pkl"))
-            
-            # Check for specific preprocessors, fallback to generic if not found
+            self.approval_model = joblib.load(os.path.join(self.models_dir, "approval_model.pkl"))
+            self.default_model = joblib.load(os.path.join(self.models_dir, "default_model.pkl"))
+            self.interest_model = joblib.load(os.path.join(self.models_dir, "interest_model.pkl"))
+
             if os.path.exists(os.path.join(self.artifacts_dir, "approval_preprocessor.pkl")):
                 self.approval_preprocessor = joblib.load(os.path.join(self.artifacts_dir, "approval_preprocessor.pkl"))
             else:
@@ -34,13 +39,67 @@ class PredictionService:
             else:
                 self.full_preprocessor = None
                 print("Warning: full_preprocessor.pkl not found.")
-                
+
             print("Models loaded successfully.")
         except Exception as e:
             print(f"Error loading models: {e}")
             self.approval_model = None
             self.default_model = None
             self.interest_model = None
+            self.approval_preprocessor = None
+            self.full_preprocessor = None
+
+    def _artifact_compat_error(self, err):
+        msg = str(err)
+        needles = [
+            "has no attribute '_fill_dtype'",
+            "Specifying the columns using strings is only supported for dataframes",
+            "feature names should match",
+            "columns are missing",
+        ]
+        return any(n.lower() in msg.lower() for n in needles)
+
+    def _ensure_compatible_or_retrain(self):
+        try:
+            if self.approval_preprocessor is not None:
+                df = pd.DataFrame([{"amount": 0.0, "risk_score": 0.0, "dti": 0.0, "emp_length_num": 0.0, "state": "CA"}])
+                required = list(getattr(self.approval_preprocessor, "feature_names_in_", df.columns))
+                self.approval_preprocessor.transform(df.reindex(columns=required))
+
+            if self.full_preprocessor is not None:
+                required = list(getattr(self.full_preprocessor, "feature_names_in_", []))
+                df = pd.DataFrame([{c: 0 for c in required}])
+                for c in ["home_ownership", "verification_status", "purpose", "addr_state", "initial_list_status", "application_type"]:
+                    if c in df.columns:
+                        df[c] = "Unknown"
+                self.full_preprocessor.transform(df.reindex(columns=required))
+        except Exception as e:
+            if not self._artifact_compat_error(e):
+                return
+            print(f"Detected incompatible model artifacts: {e}")
+            self._retrain_models_and_artifacts()
+            self._load_artifacts()
+
+    def _retrain_models_and_artifacts(self):
+        try:
+            from src.feature_engineering import FeatureEngineering
+        except ModuleNotFoundError:
+            from feature_engineering import FeatureEngineering
+        try:
+            from src.model_training import ModelTrainer
+        except ModuleNotFoundError:
+            from model_training import ModelTrainer
+        try:
+            from src.data_pipeline import DataPipeline
+        except ModuleNotFoundError:
+            from data_pipeline import DataPipeline
+
+        processed_dir = "data/processed"
+        if not os.path.exists(os.path.join(processed_dir, "accepted_clean.csv")) or not os.path.exists(os.path.join(processed_dir, "approval_data.csv")):
+            DataPipeline().run()
+
+        FeatureEngineering(processed_dir=processed_dir, models_dir=self.models_dir).run()
+        ModelTrainer(processed_dir=processed_dir, models_dir=self.models_dir, reports_dir="reports/figures").run()
 
     def _prepare_approval_features(self, input_data):
         """
