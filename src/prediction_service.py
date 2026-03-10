@@ -12,6 +12,8 @@ class PredictionService:
         self.models_dir = models_dir
         self.artifacts_dir = os.path.join(models_dir, "artifacts")
         self.lender_matcher = LenderMatcher()
+        self._last_approval_prep_error = None
+        self._last_risk_prep_error = None
         
         # Load Models and Artifacts
         print("Loading models and artifacts...")
@@ -82,11 +84,14 @@ class PredictionService:
                     df_in = df.reindex(columns=required)
                 else:
                     df_in = df
-                X_processed = self.approval_preprocessor.transform(df_in)
-                return X_processed
+                self._last_approval_prep_error = None
+                try:
+                    return self.approval_preprocessor.transform(df_in)
+                except Exception:
+                    return self.approval_preprocessor.transform(df_in.to_numpy())
             except Exception as e:
                 print(f"Approval preprocessing error: {e}")
-                # Fallback or re-raise
+                self._last_approval_prep_error = str(e)
                 return None
         return df
 
@@ -180,31 +185,32 @@ class PredictionService:
                     df_in = df.reindex(columns=required)
                 else:
                     df_in = df
-                X_processed = self.full_preprocessor.transform(df_in)
+                self._last_risk_prep_error = None
+                try:
+                    X_processed = self.full_preprocessor.transform(df_in)
+                except Exception:
+                    X_processed = self.full_preprocessor.transform(df_in.to_numpy())
                 
-                # If the training used engineered features (num__ prefix), the preprocessor output 
-                # (if it was the one used in FeatureEngineering) should align.
-                # HOWEVER, FeatureEngineering saved `full_preprocessor` which transforms RAW -> PROCESSED.
-                # ModelTraining then filtered for `num__` columns.
-                # Wait, `full_preprocessor.set_output(transform="pandas")` outputs columns like `num__loan_amnt`, `cat__state_CA`.
-                # So `X_processed` here will have those prefixes.
-                # The model expects exactly those columns.
-                
-                # Check if we need to filter X_processed as ModelTraining did
-                # ModelTraining: feature_cols = [c for c in df.columns if c.startswith('num__') or c.startswith('cat__')]
-                # X_processed from preprocessor should naturally have these if it was fitted that way.
-                
-                # One catch: ModelTraining loaded `train_data_full.csv` which was the output of `fit_transform`.
-                # So the model was trained on the OUTPUT of the preprocessor.
-                # So `X_processed` here IS the input to the model.
-                
-                # Filter just in case the preprocessor passes through other things (remainder='passthrough')
-                # The model only wants num__ and cat__ columns.
-                cols_to_keep = [c for c in X_processed.columns if c.startswith('num__') or c.startswith('cat__')]
-                return X_processed[cols_to_keep]
+                feature_names = None
+                if hasattr(self.full_preprocessor, "get_feature_names_out"):
+                    try:
+                        feature_names = list(self.full_preprocessor.get_feature_names_out())
+                    except Exception:
+                        feature_names = None
+
+                if isinstance(X_processed, pd.DataFrame):
+                    X_df = X_processed
+                elif feature_names is not None and getattr(X_processed, "shape", None) is not None and len(feature_names) == X_processed.shape[1]:
+                    X_df = pd.DataFrame(X_processed, columns=feature_names)
+                else:
+                    X_df = pd.DataFrame(X_processed)
+
+                cols_to_keep = [c for c in X_df.columns if str(c).startswith('num__') or str(c).startswith('cat__')]
+                return X_df[cols_to_keep]
                 
             except Exception as e:
                 print(f"Risk preprocessing error: {e}")
+                self._last_risk_prep_error = str(e)
                 return None
         return df
 
@@ -239,7 +245,10 @@ class PredictionService:
             if not self.approval_model:
                 warnings.append("approval_model_missing")
             if X_app is None:
-                warnings.append("approval_features_missing")
+                if self._last_approval_prep_error:
+                    warnings.append(f"approval_features_missing: {self._last_approval_prep_error}")
+                else:
+                    warnings.append("approval_features_missing")
             results['approval_probability'] = 0.0
             results['is_approved'] = False
             
@@ -267,7 +276,10 @@ class PredictionService:
             if not self.interest_model:
                 warnings.append("interest_model_missing")
             if X_risk_rate is None:
-                warnings.append("risk_features_missing_for_interest")
+                if self._last_risk_prep_error:
+                    warnings.append(f"risk_features_missing_for_interest: {self._last_risk_prep_error}")
+                else:
+                    warnings.append("risk_features_missing_for_interest")
 
         results['predicted_interest_rate'] = float(interest_rate)
                 
@@ -286,7 +298,10 @@ class PredictionService:
             if not self.default_model:
                 warnings.append("default_model_missing")
             if X_risk_default is None:
-                warnings.append("risk_features_missing_for_default")
+                if self._last_risk_prep_error:
+                    warnings.append(f"risk_features_missing_for_default: {self._last_risk_prep_error}")
+                else:
+                    warnings.append("risk_features_missing_for_default")
 
         results['default_probability'] = float(default_prob)
 
