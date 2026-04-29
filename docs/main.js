@@ -3,6 +3,7 @@ const submitBtn = document.getElementById("submitBtn");
 const emptyState = document.getElementById("emptyState");
 const resultsPanel = document.getElementById("resultsPanel");
 const healthPanel = document.getElementById("healthPanel");
+const appError = document.getElementById("appError");
 
 const examples = [
     {
@@ -122,6 +123,7 @@ function renderRecommendations(items) {
 }
 
 function renderResults(result) {
+    appError.classList.add("hidden");
     emptyState.classList.add("hidden");
     resultsPanel.classList.remove("hidden");
 
@@ -183,9 +185,10 @@ form.addEventListener("submit", async (event) => {
         }
         renderResults(payload);
     } catch (error) {
-        emptyState.classList.add("hidden");
-        resultsPanel.classList.remove("hidden");
-        resultsPanel.innerHTML = `<div class="error-box">${error.message}</div>`;
+        appError.textContent = error.message;
+        appError.classList.remove("hidden");
+        emptyState.classList.remove("hidden");
+        resultsPanel.classList.add("hidden");
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Analyze application";

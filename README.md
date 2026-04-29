@@ -10,8 +10,8 @@ LendMatch is a responsible lending triage web app built on the local LendingClub
   - approval likelihood from accepted/rejected applications
   - default probability from closed accepted loans
   - estimated APR from funded LendingClub loans
-- Professional static UI in `docs/` with model health, risk metrics, lender matches, and caseworker guidance.
-- Model card at `/model-card` with data source and validation metrics.
+- Professional static UI in `docs/` with model health, risk metrics, post-assessment lender matches, and caseworker guidance.
+- Human-readable model card at `/model.html`, backed by raw JSON at `/model-card`.
 
 ## Data
 
@@ -67,7 +67,8 @@ Open `http://localhost:8000`.
 Useful endpoints:
 
 - `GET /health`
-- `GET /model-card`
+- `GET /model.html`
+- `GET /model-card` raw JSON
 - `POST /predict`
 
 ## Test

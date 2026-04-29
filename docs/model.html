@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Card | LendMatch</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">LM</div>
+            <div>
+                <strong>LendMatch</strong>
+                <span>Responsible lending triage</span>
+            </div>
+        </div>
+        <nav>
+            <a href="/">Assessment</a>
+            <a href="/about.html">About</a>
+        </nav>
+    </header>
+
+    <main class="model-page">
+        <section class="model-hero panel">
+            <div>
+                <p class="eyebrow">Model Card</p>
+                <h1>Transparent performance summary for charity review.</h1>
+                <p class="lede-dark">This page turns the underlying model-card JSON into a readable adoption artifact: data sources, validation metrics, intended use, and operational limits.</p>
+            </div>
+            <a class="secondary-link" href="/model-card" target="_blank">View raw JSON</a>
+        </section>
+
+        <section class="metric-grid model-metrics" id="modelMetrics">
+            <article class="metric-card">
+                <span>Approval ROC-AUC</span>
+                <strong id="approvalAuc">--</strong>
+                <small>Accepted vs rejected application triage</small>
+            </article>
+            <article class="metric-card">
+                <span>Default ROC-AUC</span>
+                <strong id="defaultAuc">--</strong>
+                <small>Closed-loan repayment outcome model</small>
+            </article>
+            <article class="metric-card">
+                <span>APR MAE</span>
+                <strong id="rateMae">--</strong>
+                <small>Mean absolute APR error in points</small>
+            </article>
+        </section>
+
+        <section class="model-grid">
+            <article class="panel">
+                <p class="eyebrow">Data Sources</p>
+                <h2>Training data</h2>
+                <dl class="definition-list" id="dataSources"></dl>
+            </article>
+            <article class="panel">
+                <p class="eyebrow">Use</p>
+                <h2>Intended workflow</h2>
+                <p class="body-copy">LendMatch supports caseworkers by estimating referral readiness, risk band, likely pricing, and partner fit. It should be used before lender submission, alongside applicant consent and human review.</p>
+            </article>
+            <article class="panel">
+                <p class="eyebrow">Controls</p>
+                <h2>Deployment requirements</h2>
+                <ul class="quality-list">
+                    <li>Document referral policy and human override rules.</li>
+                    <li>Monitor outcomes by protected and vulnerability-related cohorts where legally appropriate.</li>
+                    <li>Keep adverse-action, audit, and data-retention processes outside this prototype.</li>
+                </ul>
+            </article>
+            <article class="panel">
+                <p class="eyebrow">Limitations</p>
+                <h2>Not a final credit decision</h2>
+                <ul class="quality-list" id="modelNotes"></ul>
+            </article>
+        </section>
+    </main>
+
+    <script src="model.js"></script>
+</body>
+</html>
