@@ -7,7 +7,7 @@ class LenderMatcher:
         self.lenders = [
             {
                 "id": "L001",
-                "name": "Prime Bank",
+                "name": "Community Prime Bank",
                 "min_score": 720,
                 "max_dti": 35.0,
                 "min_income": 60000,
@@ -27,7 +27,7 @@ class LenderMatcher:
             },
             {
                 "id": "L003",
-                "name": "QuickStart Loans",
+                "name": "Starter Access Fund",
                 "min_score": 600,
                 "max_dti": 50.0,
                 "min_income": 30000,
@@ -37,7 +37,7 @@ class LenderMatcher:
             },
             {
                 "id": "L004",
-                "name": "Peer-to-Peer Investors",
+                "name": "Responsible Lending Network",
                 "min_score": 640,
                 "max_dti": 45.0,
                 "min_income": 35000,
@@ -47,7 +47,7 @@ class LenderMatcher:
             },
             {
                 "id": "L005",
-                "name": "TechFin Corp",
+                "name": "Impact Finance Partner",
                 "min_score": 680,
                 "max_dti": 40.0,
                 "min_income": 50000,
@@ -144,9 +144,9 @@ class LenderMatcher:
                 "monthly_payment": self._calculate_payment(
                     application_data.get('loan_amount'), 
                     final_rate, 
-                    36 # Assuming 36 months for simplicity, or get from app
+                    int(application_data.get("term", 36) or 36)
                 ),
-                "term": 36,
+                "term": int(application_data.get("term", 36) or 36),
                 "confidence_score": round((1 - predicted_default_prob) * 100, 1)
             }
             offers.append(offer)

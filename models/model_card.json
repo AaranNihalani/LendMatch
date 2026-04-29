@@ -1,0 +1,32 @@
+{
+  "project": "LendMatch",
+  "data": {
+    "accepted_csv": "data/accepted_2007_to_2018Q4.csv",
+    "rejected_csv": "data/rejected_2007_to_2018Q4.csv",
+    "accepted_sample_rows": 119998,
+    "rejected_sample_rows": 111234
+  },
+  "metrics": {
+    "approval": {
+      "rows": 231232,
+      "positive_rate": 0.519,
+      "roc_auc": 0.9861
+    },
+    "default": {
+      "rows": 105574,
+      "positive_rate": 0.1992,
+      "roc_auc": 0.722
+    },
+    "interest_rate": {
+      "rows": 119998,
+      "mae": 2.015,
+      "rmse": 2.617,
+      "r2": 0.6135
+    }
+  },
+  "notes": [
+    "Models are trained from LendingClub historical accepted and rejected applications.",
+    "Predictions are decision-support estimates, not a regulated credit decision engine.",
+    "Charity deployments should add human review, fairness monitoring, and local compliance checks."
+  ]
+}

@@ -1,18 +1,22 @@
-import sys
+import json
 import os
+import sys
+from pathlib import Path
+from typing import Optional
 
-# Add the project root directory to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+from src.lendmatch_model import ARTIFACT_PATH, MODEL_CARD_PATH
 from src.prediction_service import PredictionService
 
-app = FastAPI(title="Loan Matching Platform API")
 
-# CORS
+app = FastAPI(title="LendMatch API", version="2.0")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,62 +25,70 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Service
-# Check if models exist
-if os.path.exists("models/approval_model.pkl"):
-    try:
-        service = PredictionService()
-    except Exception as e:
-        print(f"WARNING: Failed to initialize PredictionService: {e}")
-        service = None
-else:
-    print("WARNING: Models not found. API running in limited mode.")
+try:
+    service = PredictionService()
+    load_error = None
+except Exception as exc:
     service = None
+    load_error = str(exc)
+
 
 class LoanApplication(BaseModel):
-    loan_amount: float
-    annual_inc: float
-    fico_score: float
-    dti: float
-    state: str
-    term: int = 36
-    emp_length: str = "1 year"
+    loan_amount: float = Field(ge=500, le=100000)
+    annual_inc: float = Field(ge=1000, le=5000000)
+    fico_score: float = Field(ge=300, le=850)
+    dti: float = Field(ge=0, le=80)
+    state: str = Field(min_length=2, max_length=2)
+    term: int = Field(default=36, ge=12, le=84)
+    emp_length: str = "2 years"
     purpose: str = "debt_consolidation"
     home_ownership: str = "RENT"
-    revol_bal: float = 0.0
-    total_acc: float = 10.0
+    verification_status: str = "Source Verified"
+    application_type: str = "Individual"
+    revol_bal: Optional[float] = Field(default=None, ge=0)
+    revol_util: Optional[float] = Field(default=None, ge=0)
+    total_acc: Optional[float] = Field(default=None, ge=0)
+    open_acc: Optional[float] = Field(default=None, ge=0)
+    delinq_2yrs: Optional[float] = Field(default=None, ge=0)
+    inq_last_6mths: Optional[float] = Field(default=None, ge=0)
+    pub_rec: Optional[float] = Field(default=None, ge=0)
+    credit_history_years: Optional[float] = Field(default=None, ge=0)
+
 
 @app.get("/health")
 def health_check():
-    payload = {"status": "ok", "models_loaded": service is not None}
-    if service is not None:
-        payload.update(
-            {
-                "has_approval_model": getattr(service, "approval_model", None) is not None,
-                "has_default_model": getattr(service, "default_model", None) is not None,
-                "has_interest_model": getattr(service, "interest_model", None) is not None,
-                "has_approval_preprocessor": getattr(service, "approval_preprocessor", None) is not None,
-                "has_full_preprocessor": getattr(service, "full_preprocessor", None) is not None,
-                "approval_preprocessor_type": type(getattr(service, "approval_preprocessor", None)).__name__,
-                "full_preprocessor_type": type(getattr(service, "full_preprocessor", None)).__name__,
-            }
-        )
-    return payload
+    model_card = None
+    if MODEL_CARD_PATH.exists():
+        model_card = json.loads(MODEL_CARD_PATH.read_text(encoding="utf-8"))
+    return {
+        "status": "ok" if service else "model_unavailable",
+        "models_loaded": service is not None,
+        "artifact": str(ARTIFACT_PATH),
+        "load_error": load_error,
+        "metrics": (model_card or {}).get("metrics"),
+    }
+
+
+@app.get("/model-card")
+def model_card():
+    if not MODEL_CARD_PATH.exists():
+        raise HTTPException(status_code=404, detail="Model card not found. Train the models first.")
+    return json.loads(MODEL_CARD_PATH.read_text(encoding="utf-8"))
+
 
 @app.post("/predict")
 def predict(application: LoanApplication):
-    if not service:
-        raise HTTPException(status_code=503, detail="Prediction service not available (models not loaded)")
-    
-    data = application.dict()
+    if service is None:
+        raise HTTPException(status_code=503, detail=load_error or "Prediction service is not available.")
     try:
-        results = service.predict(data)
-        return results
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        if hasattr(application, "model_dump"):
+            payload = application.model_dump()
+        else:
+            payload = application.dict()
+        return service.predict(payload)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {exc}") from exc
 
-# Serve Static Files (Frontend)
-if not os.path.exists("docs"):
-    os.makedirs("docs")
 
-app.mount("/", StaticFiles(directory="docs", html=True), name="static")
+docs_dir = Path(__file__).resolve().parents[1] / "docs"
+app.mount("/", StaticFiles(directory=str(docs_dir), html=True), name="static")

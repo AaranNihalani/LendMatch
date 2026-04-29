@@ -4,101 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About | LendMatch</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col">
-
-    <!-- Navbar -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center gap-2">
-                        <div class="w-8 h-8 bg-brand-700 rounded-md flex items-center justify-center text-white font-bold text-lg">L</div>
-                        <span class="text-xl font-bold text-slate-900 tracking-tight">LendMatch</span>
-                    </div>
-                    <div class="hidden sm:ml-8 sm:flex sm:space-x-8">
-                        <a href="/" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            Dashboard
-                        </a>
-                        <a href="/about.html" class="border-brand-500 text-slate-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            About
-                        </a>
-                    </div>
-                </div>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">LM</div>
+            <div>
+                <strong>LendMatch</strong>
+                <span>Responsible lending triage</span>
             </div>
         </div>
-    </nav>
+        <nav>
+            <a href="/">Assessment</a>
+            <a href="/model-card" target="_blank">Model Card</a>
+        </nav>
+    </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow py-16">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden p-8 sm:p-12">
-                <h1 class="text-3xl font-bold text-slate-900 mb-6">About LendMatch</h1>
-                
-                <div class="prose prose-slate max-w-none">
-                    <p class="text-lg text-slate-600 leading-relaxed mb-6">
-                        LendMatch is a next-generation credit decisioning platform powered by advanced machine learning algorithms. Our mission is to provide transparent, fair, and instant loan assessments.
-                    </p>
-                    
-                    <h3 class="text-xl font-semibold text-slate-800 mt-8 mb-4">How It Works</h3>
-                    <ul class="space-y-4 list-disc list-inside text-slate-600">
-                        <li>
-                            <strong class="text-slate-900">Data-Driven:</strong> Trained on historical LendingClub accepted/rejected data (2007–2018Q4) when provided in <code>data/raw</code>.
-                        </li>
-                        <li>
-                            <strong class="text-slate-900">Advanced AI:</strong> Uses gradient-boosting models to predict approval odds, default risk, and risk-based interest rates.
-                        </li>
-                        <li>
-                            <strong class="text-slate-900">Fairness Focused:</strong> We carefully engineer features to avoid bias, focusing on financial indicators like DTI, FICO score, and employment history.
-                        </li>
-                    </ul>
+    <main class="about-page">
+        <section class="panel">
+            <p class="eyebrow">About the product</p>
+            <h1>Built for charity lending referrals, not automated rejection.</h1>
+            <p class="lede-dark">LendMatch uses LendingClub historical application data to estimate approval likelihood, default risk, and risk-based pricing. The app is designed to help caseworkers decide whether to refer, review, or support an applicant before a formal lender submission.</p>
 
-                    <h3 class="text-xl font-semibold text-slate-800 mt-8 mb-4">Technology Stack</h3>
-                    <p class="text-slate-600 mb-6">
-                        Built with Python (FastAPI, Pandas, scikit-learn) and a modern responsive frontend.
-                    </p>
-                </div>
-
-                <div class="mt-10 pt-8 border-t border-slate-100">
-                    <a href="/" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
-                        Back to Dashboard
-                    </a>
-                </div>
+            <div class="about-grid">
+                <article>
+                    <h2>Models</h2>
+                    <p>Three scikit-learn gradient boosting models cover approval triage, default probability, and estimated APR. Metrics are published through the model card endpoint.</p>
+                </article>
+                <article>
+                    <h2>Controls</h2>
+                    <p>The interface adds validation, risk bands, partner matching, and caseworker guidance so results are understandable in a live charity presentation.</p>
+                </article>
+                <article>
+                    <h2>Limits</h2>
+                    <p>This is decision support. A real adoption should add consented credit checks, documented adverse-action rules, fairness monitoring, and legal review.</p>
+                </article>
             </div>
-
-        </div>
+        </section>
     </main>
-
-    <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-sm text-slate-400">&copy; 2026 LendMatch Inc. All rights reserved.</p>
-        </div>
-    </footer>
-
 </body>
 </html>

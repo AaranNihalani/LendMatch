@@ -3,229 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LendMatch | Professional Loan Decisioning</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <title>LendMatch | Responsible Lending Triage</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col">
-
-    <!-- Navbar -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center gap-2">
-                        <div class="w-8 h-8 bg-brand-700 rounded-md flex items-center justify-center text-white font-bold text-lg">L</div>
-                        <span class="text-xl font-bold text-slate-900 tracking-tight">LendMatch</span>
-                    </div>
-                    <div class="hidden sm:ml-8 sm:flex sm:space-x-8">
-                        <a href="/" class="border-brand-500 text-slate-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            Dashboard
-                        </a>
-                        <a href="/about.html" class="border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                            About
-                        </a>
-                    </div>
-                </div>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-mark">LM</div>
+            <div>
+                <strong>LendMatch</strong>
+                <span>Responsible lending triage</span>
             </div>
         </div>
-    </nav>
+        <nav>
+            <a href="#assessment">Assessment</a>
+            <a href="#partners">Partners</a>
+            <a href="/model-card" target="_blank">Model Card</a>
+        </nav>
+    </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow py-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-slate-900">Loan Application Analysis</h1>
-                <p class="mt-2 text-slate-600">Enter applicant details to generate AI-driven credit decisions and lender matches.</p>
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Built on LendingClub 2007-2018 application data</p>
+                <h1>Fast, explainable lending referrals for charity caseworkers.</h1>
+                <p class="lede">Screen affordability, estimate borrower risk, and match applicants with responsible finance partners before a formal lender submission.</p>
             </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                <!-- Input Form -->
-                <div class="lg:col-span-5">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                            <h2 class="text-lg font-semibold text-slate-800">Applicant Profile</h2>
-                        </div>
-                        
-                        <form id="loanForm" class="p-6 space-y-6">
-                            
-                            <!-- Financials -->
-                            <div class="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Loan Amount ($)</label>
-                                    <input type="number" name="loan_amount" value="10000" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border" placeholder="e.g. 10000">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Annual Income ($)</label>
-                                    <input type="number" name="annual_inc" value="60000" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border" placeholder="e.g. 60000">
-                                </div>
-                            </div>
-
-                            <!-- Credit Stats -->
-                            <div class="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">FICO Score</label>
-                                    <input type="number" name="fico_score" value="700" min="300" max="850" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">DTI Ratio (%)</label>
-                                    <input type="number" name="dti" value="15.0" step="0.1" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border">
-                                </div>
-                            </div>
-
-                            <!-- Dropdowns -->
-                            <div class="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">State</label>
-                                    <select name="state" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border bg-white">
-                                        <option value="CA">California</option>
-                                        <option value="NY">New York</option>
-                                        <option value="TX">Texas</option>
-                                        <option value="FL">Florida</option>
-                                        <option value="IL">Illinois</option>
-                                        <option value="PA">Pennsylvania</option>
-                                        <option value="OH">Ohio</option>
-                                        <option value="GA">Georgia</option>
-                                        <option value="NC">North Carolina</option>
-                                        <option value="MI">Michigan</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Term</label>
-                                    <select name="term" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border bg-white">
-                                        <option value="36">36 Months</option>
-                                        <option value="60">60 Months</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Employment</label>
-                                    <select name="emp_length" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border bg-white">
-                                        <option value="< 1 year">&lt; 1 year</option>
-                                        <option value="2 years">2 years</option>
-                                        <option value="5 years">5 years</option>
-                                        <option value="10+ years">10+ years</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Housing</label>
-                                    <select name="home_ownership" class="w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm py-2 px-3 border bg-white">
-                                        <option value="RENT">Rent</option>
-                                        <option value="MORTGAGE">Mortgage</option>
-                                        <option value="OWN">Own</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="pt-4">
-                                <button type="submit" id="submitBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors">
-                                    Analyze Application
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Results Section -->
-                <div class="lg:col-span-7">
-                    
-                    <!-- Empty State -->
-                    <div id="initialState" class="h-full flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-slate-200 border-dashed">
-                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-slate-900">Ready to Analyze</h3>
-                        <p class="text-slate-500 mt-1 text-center max-w-sm">Complete the form to receive AI-powered risk assessment and lender offers.</p>
-                    </div>
-
-                    <!-- Loading State -->
-                    <div id="loadingState" class="hidden h-full flex flex-col items-center justify-center p-12 bg-white rounded-xl shadow-sm border border-slate-200">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mb-4"></div>
-                        <h3 class="text-lg font-medium text-slate-900">Processing Application...</h3>
-                        <p class="text-slate-500 mt-1">Evaluating credit risk models</p>
-                    </div>
-
-                    <!-- Results Content -->
-                    <div id="resultsSection" class="hidden space-y-6">
-                        
-                        <!-- KPI Cards -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <!-- Approval Status -->
-                            <div id="approvalCard" class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Decision</div>
-                                <div>
-                                    <div id="approvalResult" class="text-2xl font-bold text-slate-900">--</div>
-                                    <div id="approvalProb" class="text-sm font-medium mt-1">--</div>
-                                </div>
-                            </div>
-
-                            <!-- Interest Rate -->
-                            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Est. Interest Rate</div>
-                                <div>
-                                    <div id="rateResult" class="text-2xl font-bold text-slate-900">--%</div>
-                                    <div class="text-sm text-slate-500 mt-1">Market Benchmark</div>
-                                </div>
-                            </div>
-
-                            <!-- Default Risk -->
-                            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
-                                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Default Probability</div>
-                                <div>
-                                    <div id="riskResult" class="text-2xl font-bold text-slate-900">--%</div>
-                                    <div class="text-sm text-slate-500 mt-1">Risk Score</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Lender Matches -->
-                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                <h3 class="text-lg font-semibold text-slate-800">Matched Offers</h3>
-                                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">Best Rates</span>
-                            </div>
-                            <div id="lenderOffers" class="divide-y divide-slate-100">
-                                <!-- Offers injected here -->
-                            </div>
-                        </div>
-
-                    </div>
+            <div class="hero-panel" id="healthPanel">
+                <span class="status-dot"></span>
+                <div>
+                    <strong>Model status</strong>
+                    <p>Checking trained artifacts...</p>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <section class="workspace" id="assessment">
+            <form id="loanForm" class="panel form-panel">
+                <div class="panel-head">
+                    <div>
+                        <p class="eyebrow">Applicant Profile</p>
+                        <h2>Decision Support</h2>
+                    </div>
+                    <button type="button" id="loadExample" class="ghost-button">Example</button>
+                </div>
+
+                <div class="form-grid">
+                    <label>Loan amount
+                        <input name="loan_amount" type="number" min="500" max="100000" value="15000" required>
+                    </label>
+                    <label>Annual income
+                        <input name="annual_inc" type="number" min="1000" value="90000" required>
+                    </label>
+                    <label>FICO score
+                        <input name="fico_score" type="number" min="300" max="850" value="800" required>
+                    </label>
+                    <label>Debt-to-income %
+                        <input name="dti" type="number" min="0" max="80" step="0.1" value="10" required>
+                    </label>
+                    <label>State
+                        <select name="state">
+                            <option>CA</option><option>NY</option><option>TX</option><option>FL</option><option>IL</option>
+                            <option>PA</option><option>OH</option><option>GA</option><option>NC</option><option>MI</option>
+                            <option>MA</option><option>WA</option><option>NJ</option><option>AZ</option><option>VA</option>
+                        </select>
+                    </label>
+                    <label>Term
+                        <select name="term">
+                            <option value="36">36 months</option>
+                            <option value="60">60 months</option>
+                        </select>
+                    </label>
+                    <label>Employment length
+                        <select name="emp_length">
+                            <option value="< 1 year">&lt; 1 year</option>
+                            <option value="2 years">2 years</option>
+                            <option value="5 years" selected>5 years</option>
+                            <option value="10+ years">10+ years</option>
+                        </select>
+                    </label>
+                    <label>Home ownership
+                        <select name="home_ownership">
+                            <option>RENT</option>
+                            <option selected>MORTGAGE</option>
+                            <option>OWN</option>
+                        </select>
+                    </label>
+                    <label>Purpose
+                        <select name="purpose">
+                            <option value="debt_consolidation">Debt consolidation</option>
+                            <option value="credit_card">Credit card refinance</option>
+                            <option value="home_improvement">Home improvement</option>
+                            <option value="small_business">Small business</option>
+                            <option value="medical">Medical</option>
+                        </select>
+                    </label>
+                    <label>Credit history years
+                        <input name="credit_history_years" type="number" min="0" max="70" value="15">
+                    </label>
+                    <label>Revolving utilization %
+                        <input name="revol_util" type="number" min="0" max="150" step="0.1" value="20">
+                    </label>
+                    <label>Open accounts
+                        <input name="open_acc" type="number" min="0" max="100" value="12">
+                    </label>
+                </div>
+
+                <button id="submitBtn" class="primary-button" type="submit">Analyze application</button>
+                <p class="fine-print">Decision support only. Final lending decisions require human review, consented checks, and local compliance review.</p>
+            </form>
+
+            <section class="results">
+                <div id="emptyState" class="panel empty-state">
+                    <div class="pulse-icon"></div>
+                    <h2>Ready for assessment</h2>
+                    <p>Submit an applicant profile to see eligibility, default risk, estimated pricing, lender matches, and caseworker guidance.</p>
+                </div>
+
+                <div id="resultsPanel" class="hidden">
+                    <div class="decision-strip" id="decisionStrip">
+                        <div>
+                            <p class="eyebrow">Recommendation</p>
+                            <h2 id="decisionText">Refer</h2>
+                        </div>
+                        <span id="riskBand">Moderate risk</span>
+                    </div>
+
+                    <div class="metric-grid">
+                        <article class="metric-card">
+                            <span>Approval likelihood</span>
+                            <strong id="approvalMetric">--</strong>
+                            <div class="bar"><i id="approvalBar"></i></div>
+                        </article>
+                        <article class="metric-card">
+                            <span>Default probability</span>
+                            <strong id="defaultMetric">--</strong>
+                            <div class="bar danger"><i id="defaultBar"></i></div>
+                        </article>
+                        <article class="metric-card">
+                            <span>Estimated APR</span>
+                            <strong id="rateMetric">--</strong>
+                            <small>LendingClub-trained pricing estimate</small>
+                        </article>
+                    </div>
+
+                    <div class="panel" id="partners">
+                        <div class="panel-head">
+                            <div>
+                                <p class="eyebrow">Matched Partners</p>
+                                <h2>Responsible offers</h2>
+                            </div>
+                            <span id="offerCount" class="pill">0 matches</span>
+                        </div>
+                        <div id="offersList" class="offers-list"></div>
+                    </div>
+
+                    <div class="panel guidance-panel">
+                        <div>
+                            <p class="eyebrow">Caseworker Guidance</p>
+                            <h2>Next steps</h2>
+                        </div>
+                        <ul id="recommendations"></ul>
+                    </div>
+                </div>
+            </section>
+        </section>
     </main>
-
-    <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-sm text-slate-400">&copy; 2026 LendMatch Inc. All rights reserved.</p>
-        </div>
-    </footer>
 
     <script src="main.js"></script>
 </body>

@@ -1,137 +1,195 @@
-document.getElementById('loanForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const submitBtn = document.getElementById('submitBtn');
-    const originalBtnText = submitBtn.innerHTML;
+const form = document.getElementById("loanForm");
+const submitBtn = document.getElementById("submitBtn");
+const emptyState = document.getElementById("emptyState");
+const resultsPanel = document.getElementById("resultsPanel");
+const healthPanel = document.getElementById("healthPanel");
+
+const examples = [
+    {
+        loan_amount: 15000,
+        annual_inc: 90000,
+        fico_score: 800,
+        dti: 10,
+        state: "CA",
+        term: 36,
+        emp_length: "5 years",
+        home_ownership: "MORTGAGE",
+        purpose: "debt_consolidation",
+        credit_history_years: 15,
+        revol_util: 20,
+        open_acc: 12,
+    },
+    {
+        loan_amount: 8500,
+        annual_inc: 32000,
+        fico_score: 632,
+        dti: 39.2,
+        state: "TX",
+        term: 36,
+        emp_length: "2 years",
+        home_ownership: "RENT",
+        purpose: "medical",
+        credit_history_years: 5,
+        revol_util: 71,
+        open_acc: 6,
+    },
+];
+
+let exampleIndex = 0;
+
+function asPercent(value) {
+    return `${(Number(value || 0) * 100).toFixed(1)}%`;
+}
+
+function money(value) {
+    return Number(value || 0).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+    });
+}
+
+function getPayload() {
+    const data = new FormData(form);
+    const numericFields = [
+        "loan_amount",
+        "annual_inc",
+        "fico_score",
+        "dti",
+        "term",
+        "credit_history_years",
+        "revol_util",
+        "open_acc",
+    ];
+    const payload = {};
+    for (const [key, value] of data.entries()) {
+        payload[key] = numericFields.includes(key) ? Number(value) : value;
+    }
+    payload.revol_bal = Math.round(payload.annual_inc * 0.15);
+    payload.total_acc = Math.max(payload.open_acc + 8, 12);
+    payload.verification_status = "Source Verified";
+    payload.application_type = "Individual";
+    return payload;
+}
+
+function setDecisionStyle(decision) {
+    const strip = document.getElementById("decisionStrip");
+    strip.style.borderColor = "#d9e2e8";
+    strip.style.background = "#fff";
+    if (decision === "Eligible") {
+        strip.style.borderColor = "#a8dcc6";
+        strip.style.background = "#f0faf5";
+    }
+    if (decision === "Needs support") {
+        strip.style.borderColor = "#ffc9c2";
+        strip.style.background = "#fff7f5";
+    }
+}
+
+function renderOffers(offers) {
+    const container = document.getElementById("offersList");
+    const count = document.getElementById("offerCount");
+    container.innerHTML = "";
+    count.textContent = `${offers.length} ${offers.length === 1 ? "match" : "matches"}`;
+
+    if (!offers.length) {
+        container.innerHTML = `<div class="error-box">No partner offers matched this profile. Use the guidance below before referral.</div>`;
+        return;
+    }
+
+    offers.forEach((offer) => {
+        const row = document.createElement("article");
+        row.className = "offer";
+        row.innerHTML = `
+            <div>
+                <strong>${offer.lender_name}</strong>
+                <span>${money(offer.monthly_payment)}/month over ${offer.term} months · confidence ${offer.confidence_score}%</span>
+            </div>
+            <div class="offer-rate">${Number(offer.interest_rate).toFixed(2)}%</div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function renderRecommendations(items) {
+    const list = document.getElementById("recommendations");
+    list.innerHTML = "";
+    items.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        list.appendChild(li);
+    });
+}
+
+function renderResults(result) {
+    emptyState.classList.add("hidden");
+    resultsPanel.classList.remove("hidden");
+
+    document.getElementById("decisionText").textContent = result.decision;
+    document.getElementById("riskBand").textContent = `${result.risk_band} risk`;
+    document.getElementById("approvalMetric").textContent = asPercent(result.approval_probability);
+    document.getElementById("defaultMetric").textContent = asPercent(result.default_probability);
+    document.getElementById("rateMetric").textContent = `${Number(result.predicted_interest_rate).toFixed(2)}%`;
+    document.getElementById("approvalBar").style.width = asPercent(result.approval_probability);
+    document.getElementById("defaultBar").style.width = asPercent(result.default_probability);
+
+    setDecisionStyle(result.decision);
+    renderOffers(result.offers || []);
+    renderRecommendations(result.recommendations || []);
+}
+
+async function checkHealth() {
+    try {
+        const response = await fetch("/health");
+        const health = await response.json();
+        const dot = healthPanel.querySelector(".status-dot");
+        const text = healthPanel.querySelector("p");
+        if (health.models_loaded) {
+            dot.classList.add("ready");
+            text.textContent = "Trained models loaded and ready";
+        } else {
+            dot.classList.add("error");
+            text.textContent = "Train models with python -m src.lendmatch_model";
+        }
+    } catch {
+        healthPanel.querySelector(".status-dot").classList.add("error");
+        healthPanel.querySelector("p").textContent = "API is not reachable";
+    }
+}
+
+document.getElementById("loadExample").addEventListener("click", () => {
+    exampleIndex = (exampleIndex + 1) % examples.length;
+    const example = examples[exampleIndex];
+    Object.entries(example).forEach(([key, value]) => {
+        const input = form.elements[key];
+        if (input) input.value = value;
+    });
+});
+
+form.addEventListener("submit", async (event) => {
+    event.preventDefault();
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="flex items-center justify-center"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing...</span>';
-
-    // Get form data
-    const formData = new FormData(e.target);
-    const data = {
-        loan_amount: parseFloat(formData.get('loan_amount')),
-        annual_inc: parseFloat(formData.get('annual_inc')),
-        fico_score: parseFloat(formData.get('fico_score')),
-        dti: parseFloat(formData.get('dti')),
-        state: formData.get('state'),
-        term: parseInt(formData.get('term')),
-        emp_length: formData.get('emp_length'),
-        home_ownership: formData.get('home_ownership'),
-        purpose: 'debt_consolidation', 
-        revol_bal: 10000.0, 
-        total_acc: 20.0 
-    };
-
-    // UI Transitions
-    const initialState = document.getElementById('initialState');
-    const loadingState = document.getElementById('loadingState');
-    const resultsSection = document.getElementById('resultsSection');
-
-    if(initialState) initialState.classList.add('hidden');
-    if(resultsSection) resultsSection.classList.add('hidden');
-    if(loadingState) loadingState.classList.remove('hidden');
+    submitBtn.textContent = "Analyzing...";
 
     try {
-        const response = await fetch('/predict', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
+        const response = await fetch("/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(getPayload()),
         });
-
-        if (!response.ok) throw new Error('Prediction failed');
-
-        const result = await response.json();
-        
-        // Wait a small delay to show loading animation (UX)
-        setTimeout(() => {
-            displayResults(result);
-            if(loadingState) loadingState.classList.add('hidden');
-            if(resultsSection) resultsSection.classList.remove('hidden');
-        }, 600);
-        
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.detail || "Prediction request failed");
+        }
+        renderResults(payload);
     } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred. Please check console.');
-        if(loadingState) loadingState.classList.add('hidden');
-        if(initialState) initialState.classList.remove('hidden');
+        emptyState.classList.add("hidden");
+        resultsPanel.classList.remove("hidden");
+        resultsPanel.innerHTML = `<div class="error-box">${error.message}</div>`;
     } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
+        submitBtn.textContent = "Analyze application";
     }
 });
 
-function displayResults(result) {
-    const approvalElem = document.getElementById('approvalResult');
-    const approvalCard = document.getElementById('approvalCard');
-    const approvalProb = document.getElementById('approvalProb');
-    const rateElem = document.getElementById('rateResult');
-    const riskElem = document.getElementById('riskResult');
-    const offersContainer = document.getElementById('lenderOffers');
-    
-    // Approval Logic
-    const approvalProbValue = (result.approval_probability === undefined || result.approval_probability === null)
-        ? 0
-        : Number(result.approval_probability);
-    const probPercent = (approvalProbValue * 100).toFixed(1);
-    
-    if (result.is_approved) {
-        approvalElem.textContent = "Approved";
-        approvalElem.className = "text-2xl font-bold text-green-600";
-        approvalProb.textContent = `${probPercent}% Probability`;
-        approvalProb.className = "text-sm font-medium mt-1 text-green-700";
-        approvalCard.className = "bg-green-50 p-5 rounded-xl shadow-sm border border-green-200 flex flex-col justify-between";
-    } else {
-        approvalElem.textContent = "Rejected";
-        approvalElem.className = "text-2xl font-bold text-red-600";
-        approvalProb.textContent = `${probPercent}% Probability`;
-        approvalProb.className = "text-sm font-medium mt-1 text-red-700";
-        approvalCard.className = "bg-red-50 p-5 rounded-xl shadow-sm border border-red-200 flex flex-col justify-between";
-    }
-    
-    // Interest Rate
-    if (result.predicted_interest_rate !== undefined && result.predicted_interest_rate !== null && !Number.isNaN(Number(result.predicted_interest_rate))) {
-        rateElem.textContent = `${Number(result.predicted_interest_rate).toFixed(2)}%`;
-    } else {
-        rateElem.textContent = "N/A";
-    }
-    
-    // Default Risk
-    if (result.default_probability !== undefined && result.default_probability !== null && !Number.isNaN(Number(result.default_probability))) {
-        riskElem.textContent = `${(Number(result.default_probability) * 100).toFixed(1)}%`;
-    } else {
-        riskElem.textContent = "N/A";
-    }
-    
-    // Offers
-    offersContainer.innerHTML = '';
-    if (result.offers && result.offers.length > 0) {
-        result.offers.forEach((offer, index) => {
-            const div = document.createElement('div');
-            div.className = 'p-4 hover:bg-slate-50 transition-colors flex justify-between items-center group';
-            div.innerHTML = `
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
-                        ${offer.lender_name.substring(0,2).toUpperCase()}
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">${offer.lender_name}</h4>
-                        <div class="text-sm text-slate-500">$${offer.monthly_payment}/mo • ${offer.term} months</div>
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="text-lg font-bold text-slate-900">${offer.interest_rate}%</div>
-                    <div class="text-xs text-slate-500">APR</div>
-                </div>
-            `;
-            offersContainer.appendChild(div);
-        });
-    } else {
-        offersContainer.innerHTML = `
-            <div class="p-8 text-center">
-                <p class="text-slate-500 text-sm">No matching offers found based on your criteria.</p>
-            </div>
-        `;
-    }
-}
+checkHealth();

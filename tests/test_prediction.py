@@ -30,8 +30,12 @@ def test_prediction():
     assert "is_approved" in result
     assert "predicted_interest_rate" in result
     assert "default_probability" in result
-    assert "approval_probability" in result
     assert "offers" in result
+    assert "decision" in result
+    assert "recommendations" in result
+    assert 0 <= result["approval_probability"] <= 1
+    assert 0 <= result["default_probability"] <= 1
+    assert 4 <= result["predicted_interest_rate"] <= 35
     print("Test Passed!")
 
 

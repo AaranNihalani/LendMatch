@@ -1,113 +1,81 @@
-# Data-Driven Loan Matching and Credit Decision Platform
+# LendMatch
 
-## Overview
-This project is a research-grade applied data science system that predicts loan outcomes (default risk, interest rate, approval probability) and recommends optimal lenders. It features a full ML pipeline, a FastAPI backend, and a lightweight static frontend.
+LendMatch is a responsible lending triage web app built on the local LendingClub accepted and rejected application CSVs. It gives charities a presentable workflow for screening loan applicants, estimating risk, and matching suitable finance partners before a formal lender referral.
 
-## Data Source
-The project supports:
-- **Real LendingClub-style Accepted/Rejected CSVs** (preferred if available)
-- **Synthetic LendingClub-like data** (auto-generated if raw CSVs are missing)
+## What Is Included
 
-If both real and synthetic CSVs exist in `data/raw/`, the pipeline prefers the real LendingClub 2007–2018Q4 files.
+- FastAPI backend serving the API and web app.
+- Rebuilt scikit-learn training pipeline in `src/lendmatch_model.py`.
+- Three trained models:
+  - approval likelihood from accepted/rejected applications
+  - default probability from closed accepted loans
+  - estimated APR from funded LendingClub loans
+- Professional static UI in `docs/` with model health, risk metrics, lender matches, and caseworker guidance.
+- Model card at `/model-card` with data source and validation metrics.
 
-### Using Real Data
-Place both files in `data/raw/`:
-- `accepted_*.csv` (accepted / funded loans)
-- `rejected_*.csv` (rejected applications)
+## Data
 
-Then run:
-```bash
-python src/data_pipeline.py
-```
+The LendingClub files are already present in this workspace:
 
-### Using Synthetic Data
-If `data/raw/` does not contain accepted/rejected CSVs, running:
-```bash
-python src/data_pipeline.py
-```
-will generate:
-- `data/raw/accepted_synthetic.csv`
-- `data/raw/rejected_synthetic.csv`
+- `data/accepted_2007_to_2018Q4.csv`
+- `data/rejected_2007_to_2018Q4.csv`
 
-## Project Structure
-```
-loan-matching-platform/
-├── api/
-│   └── index.py               # FastAPI service (also serves docs/)
-├── data/
-│   ├── raw/                   # Raw data (synthetic or real)
-│   └── processed/             # Cleaned and engineered data
-├── docs/                      # Static frontend assets
-│   ├── index.html             # Main entry point
-│   ├── styles.css             # Styles
-│   └── main.js                # Frontend logic
-├── models/
-│   ├── artifacts/             # Scalers and encoders
-│   └── ...                    # Trained models (pkl)
-├── reports/
-│   ├── figures/               # EDA and SHAP plots
-│   └── project_report.md      # Final project report
-├── src/
-│   ├── generate_data.py       # Synthetic data generation
-│   ├── data_pipeline.py       # Data cleaning (hybrid mode)
-│   ├── feature_engineering.py # Feature engineering
-│   ├── eda.py                 # Exploratory Data Analysis
-│   ├── model_training.py      # Model training & evaluation
-│   ├── lender_matching.py     # Matching algorithm
-│   └── prediction_service.py  # Inference service
-├── tests/
-│   └── test_prediction.py     # Integration test
-├── requirements.txt           # Dependencies
-└── README.md                  # This file
-```
+You do not need to download anything for the current build. If you move the project, keep those two files in `data/` or `data/raw/`.
 
 ## Setup
 
-1. **Create Virtual Environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
-2. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+If dependencies are already installed on your machine, you can skip the install step.
 
-3. **Run Pipeline (End-to-End)**
-   To generate data, process it, and train models:
-   ```bash
-   # Generate/Load data
-   python src/data_pipeline.py
-   
-   # Engineer features
-   python src/feature_engineering.py
-   
-   # Perform EDA
-   python src/eda.py
-   
-   # Train models
-   python src/model_training.py
-   ```
+## Train Models
 
-### Running the Application
+```bash
+python -m src.lendmatch_model
+```
 
-1. **Start the Web Application**
-   The backend now serves the frontend directly.
-   Open a terminal and run:
-   ```bash
-   uvicorn api.index:app --reload --port 8000
-   ```
-   
-2. **Access the Platform**
-   Open your browser and go to `http://localhost:8000`.
+This creates:
 
-## Features
-- **Prediction**: Real-time prediction of Default Risk, Interest Rate, and Approval Probability.
-- **Lender Matching**: Recommendations based on borrower profile and lender risk appetite.
-- **Interpretability**: SHAP values explaining why a specific prediction was made.
-- **Interactive UI**: Clean, modern HTML/JS interface.
+- `models/lendmatch_artifacts.joblib`
+- `models/model_card.json`
 
-## Reports
-- Full project report: `reports/project_report.md`
-- Figures: `reports/figures/`
+To train faster while experimenting:
+
+```bash
+LENDMATCH_ACCEPTED_SAMPLE=50000 LENDMATCH_REJECTED_SAMPLE=50000 python -m src.lendmatch_model
+```
+
+Current model card metrics from the local data sample:
+
+- Approval ROC-AUC: `0.9861`
+- Default ROC-AUC: `0.7220`
+- Interest-rate MAE: `2.015` APR points
+- Interest-rate R2: `0.6135`
+
+## Run The Web App
+
+```bash
+uvicorn api.index:app --reload --port 8000
+```
+
+Open `http://localhost:8000`.
+
+Useful endpoints:
+
+- `GET /health`
+- `GET /model-card`
+- `POST /predict`
+
+## Test
+
+```bash
+python tests/test_prediction.py
+```
+
+## Adoption Notes For Charities
+
+This is a polished decision-support prototype, not a regulated automated credit decision system. Before a charity adopts it for real applicants, add human review, applicant consent, audit logging, fairness testing, local compliance review, and a process for adverse-action explanations.
